@@ -1,6 +1,6 @@
 import { ACTION_POINTS, ACTIONS, DIFFICULTIES, EVENTS, MAN } from "../config";
 import type { ActionEffect, Difficulty, GameEvent, GameScore, GameState, MonthlyResult } from "../types";
-import { calculateMonth, emptyCashFlow, emptyIncome } from "./finance";
+import { applyPermanentEffects, calculateMonth, emptyCashFlow, emptyIncome } from "./finance";
 import { nextRandom } from "./rng";
 
 export function createGame(difficulty: Difficulty, seed: number): GameState {
@@ -37,16 +37,35 @@ export function toggleAction(state: GameState, id: string): GameState {
   return {...state,selectedActionIds:[...state.selectedActionIds,id],actionPoints:state.actionPoints-action.ap};
 }
 
+export function selectEventResponse(state: GameState, id: string): GameState {
+  const response = state.currentEvent?.responses?.find(item => item.id === id);
+  return response ? {...state, selectedEventResponseId:id} : state;
+}
+
 export function processMonth(state: GameState): GameState {
   const actions=ACTIONS.filter(a=>state.selectedActionIds.includes(a.id));
   const active=state.activeEffects.filter(e=>e.remaining>0);
   const severity=DIFFICULTIES[state.difficulty].eventSeverity;
   const eventEffect: ActionEffect | undefined = state.currentEvent ? Object.fromEntries(Object.entries(state.currentEvent.effect).map(([k,v])=>[k,typeof v==="number"?v*severity:v])) : undefined;
+  const response=state.currentEvent?.responses?.find(item=>item.id===state.selectedEventResponseId);
   if(state.currentEvent?.id==="rate-hike") state={...state,financial:{...state.financial,interestRate:state.financial.interestRate+.025}};
-  const effects=[...active.map(e=>e.effect),...actions.map(a=>a.effect),...(eventEffect?[eventEffect]:[])];
+
+  const activated=active.filter(e=>e.startsIn<=0);
+  const immediateActions=actions.filter(a=>a.delay===0);
+  const permanentEffects=[
+    ...activated.flatMap(e=>e.permanentEffect?[e.permanentEffect]:[]),
+    ...immediateActions.flatMap(a=>a.permanentEffect?[a.permanentEffect]:[])
+  ];
+  const permanentFinancial=applyPermanentEffects(state.financial,permanentEffects);
+  const effects=[
+    ...activated.map(e=>e.effect),
+    ...immediateActions.map(a=>a.effect),
+    ...(eventEffect?[eventEffect]:[]),
+    ...(response?[response.effect]:[])
+  ];
   const openingCash=state.financial.balance.cash;
-  const directCosts=actions.reduce((n,a)=>n+a.cashCost,0);
-  const financial=calculateMonth(state.financial,effects,directCosts);
+  const directCosts=actions.reduce((n,a)=>n+a.cashCost,0)+(response?.cashCost??0);
+  const financial=calculateMonth(permanentFinancial,effects,directCosts);
   const debt=financial.balance.shortDebt+financial.balance.longDebt;
   let credit=Math.max(0,Math.min(100,state.creditScore+effects.reduce((n,e)=>n+(e.creditChange??0),0)+(financial.cashFlow.operatingCF>=0?1:-2)));
   const insolvent=financial.balance.equity<0?state.insolventMonths+1:0;
@@ -67,12 +86,22 @@ export function processMonth(state: GameState): GameState {
   const result:MonthlyResult={month:state.month,openingCash,income:financial.income,balance:financial.balance,cashFlow:cf,selectedActions:actions.map(a=>a.name),event:state.currentEvent,lesson,
     goodDecision:financial.balance.cash>financial.monthlyFixedCosts*2?"2か月超の固定費を賄える現金余力を維持しました。":cf.operatingCF>0?"本業から現金を生みました。":"厳しい月にも意思決定を行いました。",
     improvement:financial.balance.cash<financial.monthlyFixedCosts?"手元流動性を優先し、投資規模や回収条件を見直しましょう。":financial.balance.inventory>financial.income.cogs*1.5?"在庫が厚めです。現金化を検討しましょう。":"成長と安全余裕のバランスを継続しましょう。"};
-  const newEffects=[...active.map(e=>({...e,remaining:e.remaining-1})).filter(e=>e.remaining>0),...actions.filter(a=>a.duration>1).map(a=>({source:a.name,remaining:a.duration-1,effect:a.effect})),...(state.currentEvent&&state.currentEvent.duration>1?[{source:state.currentEvent.title,remaining:state.currentEvent.duration-1,effect:eventEffect??{}}]:[])];
+  const newEffects=[
+    ...active.map(e=>e.startsIn>0?{...e,startsIn:e.startsIn-1}:{...e,remaining:e.remaining-1,permanentEffect:undefined}).filter(e=>e.remaining>0),
+    ...actions.filter(a=>a.delay>0||a.duration>1).map(a=>({
+      source:a.name,
+      remaining:a.duration,
+      startsIn:a.delay>0?a.delay-1:0,
+      effect:a.effect,
+      permanentEffect:a.permanentEffect
+    })),
+    ...(state.currentEvent&&state.currentEvent.duration>1?[{source:state.currentEvent.title,remaining:state.currentEvent.duration-1,startsIn:0,effect:eventEffect??{}}]:[])
+  ];
   const last=state.month>=state.duration;
   return {...state,screen:gameOverReason||last?"final":"result",financial,creditScore:credit,insolventMonths:insolvent,activeEffects:newEffects,history:[...state.history,result],decisionHistory:[...state.decisionHistory,`${state.month}月: ${actions.map(a=>a.name).join("・")||"温存"}`],
     cumulativeRevenue:state.cumulativeRevenue+financial.income.revenue,cumulativeProfit:state.cumulativeProfit+financial.income.netIncome,cumulativeOperatingCF:state.cumulativeOperatingCF+cf.operatingCF,cumulativeFreeCF:state.cumulativeFreeCF+cf.freeCF,peakCashShortfall:Math.min(state.peakCashShortfall,financial.balance.cash),gameOverReason};
 }
-export function nextMonth(state:GameState):GameState { return prepareMonth({...state,screen:"game",month:state.month+1,actionPoints:ACTION_POINTS,selectedActionIds:[],currentEvent:undefined}); }
+export function nextMonth(state:GameState):GameState { return prepareMonth({...state,screen:"game",month:state.month+1,actionPoints:ACTION_POINTS,selectedActionIds:[],selectedEventResponseId:undefined,currentEvent:undefined}); }
 export function isGameOver(s:GameState){return Boolean(s.gameOverReason);}
 export function scoreGame(s:GameState):GameScore {
   const b=s.financial.balance,total=Math.max(1,b.cash+b.receivables+b.inventory+b.equipment+b.otherAssets);
