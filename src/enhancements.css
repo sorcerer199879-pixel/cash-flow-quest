@@ -1,0 +1,57 @@
+.event-responses {
+  border: 0;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.event-responses legend {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.event-responses button {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  border: 1px solid #ccd2c6;
+  border-radius: 10px;
+  background: #f4f5ee;
+  padding: 10px 12px;
+  color: #13231d;
+}
+
+.event-responses button.selected {
+  border-color: #11241c;
+  box-shadow: inset 4px 0 0 #ff6b37;
+}
+
+.event-responses button span {
+  font-size: 12px;
+  color: #68736c;
+}
+
+.mobile-finance-toggle {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .mobile-finance-toggle {
+    display: block;
+    width: calc(100% - 30px);
+    margin: 15px;
+    padding: 12px;
+    border: 1px solid #ccd2c6;
+    border-radius: 10px;
+    background: #f4f5ee;
+    font-weight: 800;
+  }
+
+  .finance-column.mobile-open .statement-card,
+  .finance-column.mobile-open .tip {
+    display: block;
+  }
+}

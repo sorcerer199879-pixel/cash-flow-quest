@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ACTIONS, DIFFICULTIES, GLOSSARY, MAN } from "./config";
-import { createGame, nextMonth, prepareMonth, processMonth, scoreGame, toggleAction } from "./engine/game";
+import { createGame, nextMonth, prepareMonth, processMonth, scoreGame, selectEventResponse, toggleAction } from "./engine/game";
 import { deleteSave, getBest, hasSave, loadGame, saveBest, saveGame } from "./storage";
 import type { Difficulty, GameState } from "./types";
 
@@ -38,17 +38,19 @@ function Game({game,setGame,onHome,onGlossary,modal,setModal}:{game:GameState;se
  const grouped=Object.entries(categories);
  const [tab,setTab]=useState("sales");
  const [statement,setStatement]=useState<"pl"|"bs"|"cf"|"trend">("pl");
- const canProcess=game.selectedActionIds.length>0;
+ const [financeOpen,setFinanceOpen]=useState(false);
+ const needsResponse=Boolean(game.currentEvent?.responses?.length);
+ const canProcess=game.selectedActionIds.length>0&&(!needsResponse||Boolean(game.selectedEventResponseId));
  return <main className="app-shell"><header className="app-header"><button className="logo-button" onClick={onHome}><span>CF</span> Cash Flow Quest</button><div className="month"><strong>{game.month}</strong><span>/ {game.duration} MONTH</span></div><div className="header-actions"><button onClick={()=>saveGame(game)}>保存</button><button onClick={onGlossary}>用語集</button></div></header>
  <section className="kpi-strip" aria-label="主要指標">{[
  ["現金残高",money(f.balance.cash),f.cashFlow.cashChange],["売上高",money(f.income.revenue),0],["純利益",money(f.income.netIncome),f.income.netIncome],["営業CF",money(f.cashFlow.operatingCF),f.cashFlow.operatingCF],["フリーCF",money(f.cashFlow.freeCF),f.cashFlow.freeCF],["借入金",money(f.balance.shortDebt+f.balance.longDebt),0],["信用スコア",`${game.creditScore} / 100`,game.creditScore-60]
  ].map(([l,v,d])=><div className="kpi" key={String(l)}><span>{l}</span><strong>{v}</strong>{Number(d)!==0&&<small className={Number(d)>=0?"up":"down"}>{Number(d)>=0?"▲":"▼"} {l==="信用スコア"?"健全性":signed(Number(d))}</small>}</div>)}</section>
- <div className="dashboard"><section className="decision-column"><div className="event-card"><div><span className="section-label">MARKET / EVENT</span><h2>{game.currentEvent?.title??"穏やかな市場"}</h2><p>{game.currentEvent?.description??"今月は大きな外部変化はありません。足元の経営に集中できます。"}</p></div><div className="event-pulse">今月</div></div>
+ <div className="dashboard"><section className="decision-column"><div className="event-card"><div><span className="section-label">MARKET / EVENT</span><h2>{game.currentEvent?.title??"穏やかな市場"}</h2><p>{game.currentEvent?.description??"今月は大きな外部変化はありません。足元の経営に集中できます。"}</p>{game.currentEvent?.responses?.length?<fieldset className="event-responses"><legend>対応策を選択</legend>{game.currentEvent.responses.map(response=><button type="button" key={response.id} className={game.selectedEventResponseId===response.id?"selected":""} aria-pressed={game.selectedEventResponseId===response.id} onClick={()=>setGame(selectEventResponse(game,response.id))}><strong>{response.label}</strong><span>{response.description}</span></button>)}</fieldset>:null}</div><div className="event-pulse">今月</div></div>
  <div className="action-head"><div><span className="section-label">DECISIONS</span><h2>経営判断</h2></div><div className="ap"><span>ACTION POINT</span><strong>{game.actionPoints}</strong><i>/ 3</i></div></div>
  <nav className="tabs" aria-label="アクション分類">{grouped.map(([id,label])=><button className={tab===id?"active":""} onClick={()=>setTab(id)} key={id}>{label}</button>)}</nav>
  <div className="actions">{ACTIONS.filter(a=>a.category===tab).map(a=><button key={a.id} className={`action-card ${selected.has(a.id)?"selected":""}`} onClick={()=>setGame(toggleAction(game,a.id))} aria-pressed={selected.has(a.id)} disabled={!selected.has(a.id)&&a.ap>game.actionPoints}><div className="action-title"><span className="checkbox">{selected.has(a.id)?"✓":""}</span><strong>{a.name}</strong><b>{a.ap} AP</b></div><p>{a.description}</p><div className="action-meta"><span>費用 {money(a.cashCost||a.effect.capex||0)}</span><span>リスク {a.risk}</span><span>{a.duration}か月</span></div></button>)}</div>
- <div className="commit-bar"><div><strong>{game.selectedActionIds.length}件を選択</strong><span>残りAP {game.actionPoints}</span></div><button className="commit" disabled={!canProcess} onClick={()=>setGame(processMonth(game))}>今月を実行 <span>→</span></button></div></section>
- <aside className="finance-column"><div className="liquidity-card"><span className="section-label">RUNWAY</span><h3>現金安全余裕</h3><strong>{(f.balance.cash/Math.max(1,f.monthlyFixedCosts)).toFixed(1)}<small>か月</small></strong><div className="meter"><i style={{width:`${Math.min(100,f.balance.cash/Math.max(1,f.monthlyFixedCosts)*20)}%`}}/></div><p>固定費を賄える月数。3か月以上がひとつの目安です。</p></div>
+ <div className="commit-bar"><div><strong>{game.selectedActionIds.length}件を選択</strong><span>{needsResponse&&!game.selectedEventResponseId?"イベント対応を選択してください":`残りAP ${game.actionPoints}`}</span></div><button className="commit" disabled={!canProcess} onClick={()=>setGame(processMonth(game))}>今月を実行 <span>→</span></button></div></section>
+ <button className="mobile-finance-toggle" type="button" aria-expanded={financeOpen} onClick={()=>setFinanceOpen(open=>!open)}>{financeOpen?"財務詳細を閉じる":"財務詳細を表示"}</button><aside className={`finance-column ${financeOpen?"mobile-open":""}`}><div className="liquidity-card"><span className="section-label">RUNWAY</span><h3>現金安全余裕</h3><strong>{(f.balance.cash/Math.max(1,f.monthlyFixedCosts)).toFixed(1)}<small>か月</small></strong><div className="meter"><i style={{width:`${Math.min(100,f.balance.cash/Math.max(1,f.monthlyFixedCosts)*20)}%`}}/></div><p>固定費を賄える月数。3か月以上がひとつの目安です。</p></div>
  <div className="statement-card"><nav>{(["pl","bs","cf","trend"] as const).map(x=><button key={x} className={statement===x?"active":""} onClick={()=>setStatement(x)}>{x==="pl"?"損益":x==="bs"?"貸借":x==="cf"?"CF":"推移"}</button>)}</nav><Statement type={statement} game={game}/></div>
  <div className="tip"><span>今月の視点</span><p>売上の増加は、売掛金と在庫も増やします。成長に必要な現金を先回りして確保できていますか？</p></div></aside></div>
  {modal&&<Modal type={modal} close={()=>setModal(null)}/>}</main>

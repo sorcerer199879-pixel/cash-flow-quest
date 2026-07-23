@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { calculateMonth, emptyCashFlow, emptyIncome } from "./finance";
+import { applyPermanentEffects, calculateMonth, emptyCashFlow, emptyIncome } from "./finance";
 import type { FinancialState } from "../types";
 const base=():FinancialState=>({income:{...emptyIncome(),cogs:400000},cashFlow:emptyCashFlow(),balance:{cash:5_000_000,receivables:1_000_000,inventory:800_000,equipment:2_000_000,otherAssets:0,payables:400_000,shortDebt:0,longDebt:1_000_000,equity:7_400_000},baseRevenue:2_000_000,growthRate:0,variableCostRate:.4,monthlyFixedCosts:500_000,interestRate:.03,receivableMonths:1,payableMonths:1});
 describe("financial model",()=>{
@@ -10,4 +10,6 @@ describe("financial model",()=>{
  it("reflects payable movement",()=>{const n=calculateMonth(base(),[{payableMonthsChange:1}],0);expect(n.balance.payables).toBe(n.income.cogs*2);expect(n.cashFlow.payablesChange).toBe(n.balance.payables-400_000)});
  it("handles borrowing and repayment",()=>{const n=calculateMonth(base(),[{borrowing:2_000_000,repayment:500_000}],0);expect(n.cashFlow.financingCF).toBe(1_500_000);expect(n.balance.longDebt).toBe(2_500_000)});
  it("capitalizes investment and records investing CF",()=>{const n=calculateMonth(base(),[{capex:1_200_000}],0);expect(n.cashFlow.investingCF).toBe(-1_200_000);expect(n.balance.equipment).toBeGreaterThan(2_000_000)});
+ it("does not bake temporary effects into the next month's baseline",()=>{const p=base(),n=calculateMonth(p,[{revenueMultiplier:1.5,fixedCostChange:200_000}],0);expect(n.baseRevenue).toBe(p.baseRevenue);expect(n.monthlyFixedCosts).toBe(p.monthlyFixedCosts)});
+ it("applies permanent operating changes exactly once",()=>{const p=base(),n=applyPermanentEffects(p,[{revenueMultiplier:.15,fixedCostChange:100_000}]);expect(n.baseRevenue).toBe(2_300_000);expect(n.monthlyFixedCosts).toBe(600_000)});
 });
