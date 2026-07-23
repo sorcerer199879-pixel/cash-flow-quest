@@ -4,6 +4,19 @@ const round = Math.round;
 export const emptyIncome = (): IncomeStatement => ({revenue:0,cogs:0,grossProfit:0,payroll:0,marketing:0,rent:0,otherFixed:0,depreciation:0,interest:0,operatingProfit:0,pretaxProfit:0,tax:0,netIncome:0});
 export const emptyCashFlow = (): CashFlowStatement => ({netIncome:0,depreciation:0,receivablesChange:0,inventoryChange:0,payablesChange:0,operatingCF:0,capex:0,investingCF:0,borrowing:0,repayment:0,equityRaised:0,financingCF:0,freeCF:0,cashChange:0});
 
+export function applyPermanentEffects(previous: FinancialState, effects: ActionEffect[]): FinancialState {
+  const sum = (key: keyof ActionEffect) => effects.reduce((n, e) => n + Number(e[key] ?? 0), 0);
+  return {
+    ...previous,
+    baseRevenue: Math.max(0, round(previous.baseRevenue * (1 + sum("revenueMultiplier")))),
+    growthRate: Math.max(-.05, previous.growthRate + sum("growthChange")),
+    variableCostRate: Math.min(.8, Math.max(.15, previous.variableCostRate + sum("variableCostRateChange"))),
+    monthlyFixedCosts: Math.max(0, previous.monthlyFixedCosts + sum("fixedCostChange")),
+    receivableMonths: Math.max(0, previous.receivableMonths + sum("receivableMonthsChange")),
+    payableMonths: Math.max(0, previous.payableMonths + sum("payableMonthsChange")),
+  };
+}
+
 export function calculateMonth(previous: FinancialState, effects: ActionEffect[], directCosts: number) {
   const sum = (key: keyof ActionEffect) => effects.reduce((n, e) => n + Number(e[key] ?? 0), 0);
   const revenueMultiplier = sum("revenueMultiplier");
@@ -52,9 +65,10 @@ export function calculateMonth(previous: FinancialState, effects: ActionEffect[]
   return {
     income, cashFlow,
     balance:{cash,receivables,inventory,equipment,otherAssets:previous.balance.otherAssets,payables,shortDebt:previous.balance.shortDebt,longDebt,equity},
-    baseRevenue:Math.max(0,round(previous.baseRevenue*(1+growthRate*.45))), growthRate,
-    variableCostRate:Math.max(.15, previous.variableCostRate + sum("variableCostRateChange")*.22),
-    monthlyFixedCosts:Math.max(0, previous.monthlyFixedCosts + sum("fixedCostChange")*.5),
+    baseRevenue:Math.max(0,round(previous.baseRevenue*(1+previous.growthRate*.45))),
+    growthRate:previous.growthRate,
+    variableCostRate:previous.variableCostRate,
+    monthlyFixedCosts:previous.monthlyFixedCosts,
     interestRate:previous.interestRate, receivableMonths:previous.receivableMonths, payableMonths:previous.payableMonths
   } satisfies FinancialState;
 }
