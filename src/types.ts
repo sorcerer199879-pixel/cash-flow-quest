@@ -51,12 +51,20 @@ export interface ActionEffect {
 export interface PlayerAction {
   id: string; name: string; category: ActionCategory; ap: number; cashCost: number;
   risk: "低" | "中" | "高"; duration: number; delay: number; description: string; effect: ActionEffect;
+  permanentEffect?: ActionEffect;
+}
+export interface EventResponse {
+  id: string; label: string; description: string; cashCost: number; effect: ActionEffect;
 }
 export interface GameEvent {
   id: string; title: string; description: string; probability: number; minMonth?: number;
   advancedOnly?: boolean; effect: ActionEffect; duration: number; lesson: string;
+  responses?: EventResponse[];
 }
-export interface ActiveEffect { source: string; remaining: number; effect: ActionEffect; }
+export interface ActiveEffect {
+  source: string; remaining: number; startsIn: number; effect: ActionEffect;
+  permanentEffect?: ActionEffect;
+}
 export interface MonthlyResult {
   month: number; openingCash: number; income: IncomeStatement; balance: BalanceSheet;
   cashFlow: CashFlowStatement; selectedActions: string[]; event?: GameEvent;
@@ -65,6 +73,7 @@ export interface MonthlyResult {
 export interface GameState {
   version: 1; screen: Screen; difficulty: Difficulty; seed: number; rngState: number;
   month: number; duration: number; actionPoints: number; selectedActionIds: string[];
+  selectedEventResponseId?: string;
   financial: FinancialState; creditScore: number; activeEffects: ActiveEffect[];
   currentEvent?: GameEvent; history: MonthlyResult[]; decisionHistory: string[];
   cumulativeRevenue: number; cumulativeProfit: number; cumulativeOperatingCF: number;
