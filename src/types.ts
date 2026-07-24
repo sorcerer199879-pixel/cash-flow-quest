@@ -55,6 +55,7 @@ export interface PlayerAction {
 }
 export interface EventResponse {
   id: string; label: string; description: string; cashCost: number; effect: ActionEffect;
+  learning: string;
 }
 export interface GameEvent {
   id: string; title: string; description: string; probability: number; minMonth?: number;
@@ -68,6 +69,7 @@ export interface ActiveEffect {
 export interface MonthlyResult {
   month: number; openingCash: number; income: IncomeStatement; balance: BalanceSheet;
   cashFlow: CashFlowStatement; selectedActions: string[]; event?: GameEvent;
+  eventResponse?: EventResponse; eventImpact: string[];
   lesson: string; goodDecision: string; improvement: string;
 }
 export interface GameState {

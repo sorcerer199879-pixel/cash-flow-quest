@@ -38,6 +38,46 @@
   display: none;
 }
 
+.response-result {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid #ccd2c6;
+  background: #fff;
+}
+
+.response-result > span {
+  color: #ff6b37;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.response-result h3 {
+  margin: 6px 0;
+}
+
+.response-result p,
+.response-result small {
+  color: #68736c;
+  line-height: 1.6;
+}
+
+.response-result ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.response-result li {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #efffd1;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 @media (max-width: 600px) {
   .mobile-finance-toggle {
     display: block;
