@@ -42,22 +42,46 @@ export const ACTIONS: PlayerAction[] = [
 ];
 
 export const EVENTS: GameEvent[] = [
-  {id:"key-client",title:"大口顧客からの紹介",description:"評判が広がり、受注が増えました。",probability:.13,effect:{revenueMultiplier:.22},duration:2,lesson:"成長時ほど売掛金と在庫も増えます。"},
+  {id:"key-client",title:"大口顧客からの紹介",description:"評判が広がり、受注が増えました。",probability:.13,effect:{revenueMultiplier:.22},duration:2,lesson:"成長時ほど売掛金と在庫も増えます。",responses:[
+    {id:"controlled-growth",label:"受注量を調整する",description:"売上機会を一部見送り、在庫負担を抑える。",cashCost:0,effect:{revenueMultiplier:-.08,inventoryChange:-20*MAN},learning:"売上をあえて抑える判断も、資金余力を守る有効な成長管理です。"},
+    {id:"capture-demand",label:"需要を取り切る",description:"在庫を増やし、大きな売上機会を狙う。",cashCost:0,effect:{revenueMultiplier:.10,inventoryChange:35*MAN},learning:"成長には運転資金が必要です。増収分が入金される前の資金を確保しましょう。"}
+  ]},
   {id:"late-payment",title:"入金遅延",description:"取引先の支払いが1か月遅れます。",probability:.15,effect:{receivableMonthsChange:1},duration:2,lesson:"利益があっても、回収までは現金ではありません。",responses:[
-    {id:"wait",label:"通常回収を待つ",description:"費用なし。資金余力で耐える。",cashCost:0,effect:{}},
-    {id:"factor",label:"早期回収を依頼",description:"手数料を払い回収遅延を相殺する。",cashCost:15*MAN,effect:{receivableMonthsChange:-1}}
+    {id:"wait",label:"通常回収を待つ",description:"費用なし。資金余力で耐える。",cashCost:0,effect:{},learning:"十分な手元流動性があれば、手数料を払わず回収を待てます。"},
+    {id:"factor",label:"早期回収を依頼",description:"手数料を払い回収遅延を相殺する。",cashCost:15*MAN,effect:{receivableMonthsChange:-1},learning:"利益を一部手放しても、資金ショートを避ける価値がある局面があります。"}
   ]},
-  {id:"material",title:"原材料価格の上昇",description:"仕入単価が上昇しました。",probability:.13,effect:{variableCostRateChange:.055},duration:3,lesson:"固定費だけでなく変動費率の管理も利益と現金を守ります。"},
-  {id:"recession",title:"景気後退の兆し",description:"市場全体の需要が弱まっています。",probability:.10,effect:{revenueMultiplier:-.18},duration:3,lesson:"固定費が高いほど売上減少時の損失が大きくなります。"},
-  {id:"boom",title:"市場が急成長",description:"カテゴリーへの注目が集まっています。",probability:.10,effect:{revenueMultiplier:.28,growthChange:.006},duration:2,lesson:"好況は運転資金需要も連れてきます。"},
+  {id:"material",title:"原材料価格の上昇",description:"仕入単価が上昇しました。",probability:.13,effect:{variableCostRateChange:.055},duration:3,lesson:"固定費だけでなく変動費率の管理も利益と現金を守ります。",responses:[
+    {id:"absorb-cost",label:"値上げせず吸収する",description:"顧客を守る一方、粗利率の低下を受け入れる。",cashCost:0,effect:{revenueMultiplier:.04},learning:"販売量を守っても、限界利益が薄くなると営業CFは弱くなります。"},
+    {id:"supplier-review",label:"仕入先を見直す",description:"調査費を払い、原価上昇を一部抑える。",cashCost:12*MAN,effect:{variableCostRateChange:-.035,revenueMultiplier:-.03},learning:"調達先の分散は短期費用を伴いますが、原価と供給リスクを抑えます。"}
+  ]},
+  {id:"recession",title:"景気後退の兆し",description:"市場全体の需要が弱まっています。",probability:.10,effect:{revenueMultiplier:-.18},duration:3,lesson:"固定費が高いほど売上減少時の損失が大きくなります。",responses:[
+    {id:"protect-cash",label:"支出を引き締める",description:"成長を少し犠牲に固定費を抑える。",cashCost:5*MAN,effect:{fixedCostChange:-12*MAN,growthChange:-.002},learning:"不況時は損益分岐点を下げることで、現金流出の速度を抑えられます。"},
+    {id:"counter-cyclical",label:"逆風下で営業強化",description:"費用を投じ、売上減少を一部補う。",cashCost:20*MAN,effect:{revenueMultiplier:.10,growthChange:.003},learning:"逆張り投資は将来の顧客を得られますが、十分な現金余力が前提です。"}
+  ]},
+  {id:"boom",title:"市場が急成長",description:"カテゴリーへの注目が集まっています。",probability:.10,effect:{revenueMultiplier:.28,growthChange:.006},duration:2,lesson:"好況は運転資金需要も連れてきます。",responses:[
+    {id:"reserve-first",label:"現金余力を優先する",description:"受注を絞り、運転資金の膨張を抑える。",cashCost:0,effect:{revenueMultiplier:-.09,inventoryChange:-15*MAN},learning:"好況でも資金制約を超えて売ると、黒字倒産の原因になります。"},
+    {id:"scale-fast",label:"一気に規模を拡大する",description:"在庫と販促へ先行投資して成長を狙う。",cashCost:20*MAN,effect:{revenueMultiplier:.12,inventoryChange:45*MAN,growthChange:.004},learning:"成長投資は売上より先に現金を使います。回収までの資金を見積もりましょう。"}
+  ]},
   {id:"breakdown",title:"設備トラブル",description:"修繕と一時的な生産低下が発生。",probability:.09,minMonth:4,effect:{fixedCostChange:35*MAN,revenueMultiplier:-.12},duration:1,lesson:"安全余裕は予期せぬ支出への保険です。",responses:[
-    {id:"repair",label:"応急修理",description:"少額修理で売上低下を受け入れる。",cashCost:0,effect:{}},
-    {id:"rush",label:"緊急復旧",description:"追加費用で売上低下を抑える。",cashCost:25*MAN,effect:{revenueMultiplier:.10,fixedCostChange:-20*MAN}}
+    {id:"repair",label:"応急修理",description:"少額修理で売上低下を受け入れる。",cashCost:0,effect:{},learning:"安全余裕が薄い場合、売上低下を受け入れて現金支出を抑える選択もあります。"},
+    {id:"rush",label:"緊急復旧",description:"追加費用で売上低下を抑える。",cashCost:25*MAN,effect:{revenueMultiplier:.10,fixedCostChange:-20*MAN},learning:"復旧費は利益を下げますが、失う粗利より小さければ合理的です。"}
   ]},
-  {id:"obsolete",title:"在庫の陳腐化",description:"一部在庫の価値が失われました。",probability:.08,minMonth:5,effect:{inventoryChange:-55*MAN,variableCostRateChange:.03},duration:1,lesson:"在庫は現金を拘束し、価値が下がるリスクもあります。"},
-  {id:"grant",title:"業務改善補助金",description:"改善活動が評価され補助金を受給。",probability:.07,minMonth:3,effect:{equityRaised:45*MAN},duration:1,lesson:"一時的な入金と持続的な営業CFは区別しましょう。"},
-  {id:"rate-hike",title:"金利上昇",description:"借入金利が上がりました。",probability:.11,minMonth:6,advancedOnly:true,effect:{},duration:5,lesson:"借入は成長を加速しますが、金利変動リスクがあります。"},
-  {id:"default",title:"取引先の倒産",description:"売掛金の一部が回収不能に。",probability:.08,minMonth:8,advancedOnly:true,effect:{receivableMonthsChange:1,creditChange:-5},duration:1,lesson:"取引先の集中と回収期間は信用リスクを増幅します。"}
+  {id:"obsolete",title:"在庫の陳腐化",description:"一部在庫の価値が失われました。",probability:.08,minMonth:5,effect:{inventoryChange:-55*MAN,variableCostRateChange:.03},duration:1,lesson:"在庫は現金を拘束し、価値が下がるリスクもあります。",responses:[
+    {id:"write-off",label:"廃棄して整理する",description:"追加支出なしで損失を確定する。",cashCost:0,effect:{},learning:"在庫の損失を早く認識すると、次の仕入判断を適正化できます。"},
+    {id:"clear-old-stock",label:"追加値引きで現金化",description:"粗利を譲り、残った在庫の回収を急ぐ。",cashCost:5*MAN,effect:{inventoryChange:-30*MAN,revenueMultiplier:.05,variableCostRateChange:.025},learning:"値引きは利益率を下げても、眠る在庫を現金へ戻す効果があります。"}
+  ]},
+  {id:"grant",title:"業務改善補助金",description:"改善活動が評価され補助金を受給。",probability:.07,minMonth:3,effect:{equityRaised:45*MAN},duration:1,lesson:"一時的な入金と持続的な営業CFは区別しましょう。",responses:[
+    {id:"hold-grant",label:"安全資金として保有",description:"補助金を現金余力として残す。",cashCost:0,effect:{},learning:"一時収入を固定費拡大に使わず、安全余裕へ回すと耐久力が増します。"},
+    {id:"reinvest-grant",label:"改善投資へ再投入",description:"補助金の一部を将来成長へ振り向ける。",cashCost:0,effect:{capex:35*MAN,growthChange:.004},learning:"一時収入を投資へ回す場合、継続収益で維持費を賄えるか確認しましょう。"}
+  ]},
+  {id:"rate-hike",title:"金利上昇",description:"借入金利が上がりました。",probability:.11,minMonth:6,advancedOnly:true,effect:{},duration:5,lesson:"借入は成長を加速しますが、金利変動リスクがあります。",responses:[
+    {id:"keep-debt",label:"借入を維持する",description:"現金を守り、利息増加を受け入れる。",cashCost:0,effect:{},learning:"返済を急がないことで流動性は守れますが、将来の利息負担が残ります。"},
+    {id:"partial-repay",label:"一部を繰上返済する",description:"現金を使い、借入残高を減らす。",cashCost:0,effect:{repayment:45*MAN,creditChange:2},learning:"金利上昇時の返済は利息を減らしますが、手元現金との比較が必要です。"}
+  ]},
+  {id:"default",title:"取引先の倒産",description:"売掛金の一部が回収不能に。",probability:.08,minMonth:8,advancedOnly:true,effect:{receivableMonthsChange:1,creditChange:-5},duration:1,lesson:"取引先の集中と回収期間は信用リスクを増幅します。",responses:[
+    {id:"legal-collection",label:"回収交渉を進める",description:"費用を払い、一部回収の可能性を残す。",cashCost:18*MAN,effect:{receivableMonthsChange:-.5,creditChange:2},learning:"回収費用と回収見込額を比較し、期待値で判断する必要があります。"},
+    {id:"cut-loss",label:"損失を確定する",description:"回収を諦め、経営資源を次へ振り向ける。",cashCost:0,effect:{creditChange:-1},learning:"回収不能先へ追加資源を投じない判断は、将来の現金を守ります。"}
+  ]}
 ];
 
 export const GLOSSARY = [
