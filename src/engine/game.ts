@@ -83,7 +83,9 @@ export function processMonth(state: GameState): GameState {
   if(cf.capex>0) reasons.push("設備投資に現金を使った");
   if(cf.borrowing>0) reasons.push("借入で現金を調達した");
   const lesson=`${financial.income.netIncome>=0?"黒字":"赤字"}で、現金は${cf.cashChange>=0?"増加":"減少"}。利益との差は${formatSigned(difference)}です。${reasons.join("、")||"利益と現金の動きは概ね一致しました"}。`;
-  const result:MonthlyResult={month:state.month,openingCash,income:financial.income,balance:financial.balance,cashFlow:cf,selectedActions:actions.map(a=>a.name),event:state.currentEvent,lesson,
+  const eventImpact=response?summarizeEventResponse(response.effect,response.cashCost):[];
+  const responseLesson=response?` 対応策「${response.label}」では、${response.learning}`:"";
+  const result:MonthlyResult={month:state.month,openingCash,income:financial.income,balance:financial.balance,cashFlow:cf,selectedActions:actions.map(a=>a.name),event:state.currentEvent,eventResponse:response,eventImpact,lesson:lesson+responseLesson,
     goodDecision:financial.balance.cash>financial.monthlyFixedCosts*2?"2か月超の固定費を賄える現金余力を維持しました。":cf.operatingCF>0?"本業から現金を生みました。":"厳しい月にも意思決定を行いました。",
     improvement:financial.balance.cash<financial.monthlyFixedCosts?"手元流動性を優先し、投資規模や回収条件を見直しましょう。":financial.balance.inventory>financial.income.cogs*1.5?"在庫が厚めです。現金化を検討しましょう。":"成長と安全余裕のバランスを継続しましょう。"};
   const newEffects=[
@@ -117,3 +119,18 @@ export function scoreGame(s:GameState):GameScore {
   return {rank,score,equityRatio,cashToSales,growth,stability,risk:s.gameOverReason?"高":equityRatio<.2||cashToSales<.5?"中":"低",type};
 }
 function formatSigned(v:number){return `${v>=0?"+":""}${Math.round(v/MAN)}万円`;}
+function summarizeEventResponse(effect:ActionEffect,cashCost:number):string[]{
+  const impacts:string[]=[];
+  if(cashCost>0) impacts.push(`対応費用 ${Math.round(cashCost/MAN)}万円`);
+  if(effect.revenueMultiplier) impacts.push(`売上への影響 ${formatPercent(effect.revenueMultiplier)}`);
+  if(effect.fixedCostChange) impacts.push(`固定費 ${formatSigned(effect.fixedCostChange)}`);
+  if(effect.variableCostRateChange) impacts.push(`変動費率 ${formatPercent(effect.variableCostRateChange)}`);
+  if(effect.growthChange) impacts.push(`成長率 ${formatPercent(effect.growthChange)}`);
+  if(effect.receivableMonthsChange) impacts.push(`回収期間 ${effect.receivableMonthsChange>0?"+":""}${effect.receivableMonthsChange}か月`);
+  if(effect.inventoryChange) impacts.push(`在庫 ${formatSigned(effect.inventoryChange)}`);
+  if(effect.capex) impacts.push(`設備投資 ${Math.round(effect.capex/MAN)}万円`);
+  if(effect.repayment) impacts.push(`借入返済 ${Math.round(effect.repayment/MAN)}万円`);
+  if(effect.creditChange) impacts.push(`信用スコア ${effect.creditChange>0?"+":""}${effect.creditChange}`);
+  return impacts.length?impacts:["追加の財務影響なし"];
+}
+function formatPercent(v:number){return `${v>=0?"+":""}${(v*100).toFixed(1)}%`;}
