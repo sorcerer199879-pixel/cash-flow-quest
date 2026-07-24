@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ACTIONS, DIFFICULTIES, GLOSSARY, MAN } from "./config";
+import { ACTION_GUIDES, RULE_SECTIONS, TUTORIAL_STEPS } from "./education";
 import { createGame, nextMonth, prepareMonth, processMonth, scoreGame, selectEventResponse, toggleAction } from "./engine/game";
 import { deleteSave, getBest, hasSave, loadGame, saveBest, saveGame } from "./storage";
 import type { Difficulty, GameState } from "./types";
@@ -11,9 +12,9 @@ const categories={sales:"売上",cost:"費用",workingCapital:"運転資金",inv
 function App(){
   const [game,setGame]=useState<GameState|null>(null);
   const [seed,setSeed]=useState(()=>Math.floor(Date.now()%999999));
-  const [modal,setModal]=useState<"guide"|"glossary"|null>(null);
+  const [modal,setModal]=useState<"guide"|"rules"|"actions"|"glossary"|null>(null);
   useEffect(()=>{if(game){saveGame(game);}},[game]);
-  const start=(d:Difficulty)=>setGame(prepareMonth(createGame(d,seed||1)));
+  const start=(d:Difficulty)=>{setGame(prepareMonth(createGame(d,seed||1)));if(d==="beginner")setModal("guide");};
   if(!game) return <Title onStart={start} seed={seed} setSeed={setSeed} onContinue={()=>{const s=loadGame();if(s)setGame(s);}} modal={modal} setModal={setModal}/>;
   const restart=()=>setGame(prepareMonth(createGame(game.difficulty,game.seed)));
   if(game.screen==="final")return <Final game={game} onHome={()=>setGame(null)} onRestart={restart}/>;
@@ -21,9 +22,10 @@ function App(){
   return <Game game={game} setGame={setGame} onHome={()=>setGame(null)} onGlossary={()=>setModal("glossary")} modal={modal} setModal={setModal}/>;
 }
 
-function Title({onStart,seed,setSeed,onContinue,modal,setModal}:{onStart:(d:Difficulty)=>void;seed:number;setSeed:(n:number)=>void;onContinue:()=>void;modal:"guide"|"glossary"|null;setModal:(m:"guide"|"glossary"|null)=>void}){
+type LearningModal = "guide"|"rules"|"actions"|"glossary";
+function Title({onStart,seed,setSeed,onContinue,modal,setModal}:{onStart:(d:Difficulty)=>void;seed:number;setSeed:(n:number)=>void;onContinue:()=>void;modal:LearningModal|null;setModal:(m:LearningModal|null)=>void}){
  return <main className="title-shell">
-   <header className="title-top"><span className="brand-mark">CF</span><span>FINANCIAL SIMULATION</span><button className="text-button" onClick={()=>setModal("guide")}>遊び方</button><button className="text-button" onClick={()=>setModal("glossary")}>用語集</button></header>
+   <header className="title-top"><span className="brand-mark">CF</span><span>FINANCIAL SIMULATION</span><button className="text-button" onClick={()=>setModal("guide")}>チュートリアル</button><button className="text-button" onClick={()=>setModal("rules")}>ルールブック</button></header>
    <section className="hero"><div><p className="eyebrow">利益を追うか、現金を守るか。</p><h1>Cash Flow<br/><em>Quest</em></h1><p className="lead">小さな事業の24か月。売上、在庫、投資、借入——<br/>あなたの一手が、帳簿と銀行残高を別々に動かす。</p></div><div className="cash-orbit" aria-hidden="true"><div>¥</div><span>PROFIT</span><span>CASH</span></div></section>
    <section className="start-panel"><div className="panel-heading"><div><span>01</span><h2>難易度を選ぶ</h2></div><label>乱数シード<input type="number" value={seed} onChange={e=>setSeed(Number(e.target.value))}/></label></div>
    <div className="difficulty-grid">{Object.values(DIFFICULTIES).map((d,i)=><button key={d.id} className="difficulty" onClick={()=>onStart(d.id)}><span className="difficulty-no">0{i+1}</span><strong>{d.label}</strong><small>{d.description}</small><dl><div><dt>初期現金</dt><dd>{money(d.initialCash)}</dd></div><div><dt>期間</dt><dd>{d.duration}か月</dd></div><div><dt>回収</dt><dd>{d.receivableMonths}か月</dd></div></dl><span className="start-arrow">開始 →</span></button>)}</div>
@@ -33,7 +35,7 @@ function Title({onStart,seed,setSeed,onContinue,modal,setModal}:{onStart:(d:Diff
  </main>
 }
 
-function Game({game,setGame,onHome,onGlossary,modal,setModal}:{game:GameState;setGame:(s:GameState)=>void;onHome:()=>void;onGlossary:()=>void;modal:"guide"|"glossary"|null;setModal:(m:null)=>void}){
+function Game({game,setGame,onHome,onGlossary,modal,setModal}:{game:GameState;setGame:(s:GameState)=>void;onHome:()=>void;onGlossary:()=>void;modal:LearningModal|null;setModal:(m:LearningModal|null)=>void}){
  const f=game.financial, selected=new Set(game.selectedActionIds);
  const grouped=Object.entries(categories);
  const [tab,setTab]=useState("sales");
@@ -41,14 +43,14 @@ function Game({game,setGame,onHome,onGlossary,modal,setModal}:{game:GameState;se
  const [financeOpen,setFinanceOpen]=useState(false);
  const needsResponse=Boolean(game.currentEvent?.responses?.length);
  const canProcess=game.selectedActionIds.length>0&&(!needsResponse||Boolean(game.selectedEventResponseId));
- return <main className="app-shell"><header className="app-header"><button className="logo-button" onClick={onHome}><span>CF</span> Cash Flow Quest</button><div className="month"><strong>{game.month}</strong><span>/ {game.duration} MONTH</span></div><div className="header-actions"><button onClick={()=>saveGame(game)}>保存</button><button onClick={onGlossary}>用語集</button></div></header>
+ return <main className="app-shell"><header className="app-header"><button className="logo-button" onClick={onHome}><span>CF</span> Cash Flow Quest</button><div className="month"><strong>{game.month}</strong><span>/ {game.duration} MONTH</span></div><div className="header-actions"><button onClick={()=>saveGame(game)}>保存</button><button onClick={()=>setModal("guide")}>学び方</button><button onClick={onGlossary}>用語集</button></div></header>
  <section className="kpi-strip" aria-label="主要指標">{[
  ["現金残高",money(f.balance.cash),f.cashFlow.cashChange],["売上高",money(f.income.revenue),0],["純利益",money(f.income.netIncome),f.income.netIncome],["営業CF",money(f.cashFlow.operatingCF),f.cashFlow.operatingCF],["フリーCF",money(f.cashFlow.freeCF),f.cashFlow.freeCF],["借入金",money(f.balance.shortDebt+f.balance.longDebt),0],["信用スコア",`${game.creditScore} / 100`,game.creditScore-60]
  ].map(([l,v,d])=><div className="kpi" key={String(l)}><span>{l}</span><strong>{v}</strong>{Number(d)!==0&&<small className={Number(d)>=0?"up":"down"}>{Number(d)>=0?"▲":"▼"} {l==="信用スコア"?"健全性":signed(Number(d))}</small>}</div>)}</section>
  <div className="dashboard"><section className="decision-column"><div className="event-card"><div><span className="section-label">MARKET / EVENT</span><h2>{game.currentEvent?.title??"穏やかな市場"}</h2><p>{game.currentEvent?.description??"今月は大きな外部変化はありません。足元の経営に集中できます。"}</p>{game.currentEvent?.responses?.length?<fieldset className="event-responses"><legend>対応策を選択</legend>{game.currentEvent.responses.map(response=><button type="button" key={response.id} className={game.selectedEventResponseId===response.id?"selected":""} aria-pressed={game.selectedEventResponseId===response.id} onClick={()=>setGame(selectEventResponse(game,response.id))}><strong>{response.label}</strong><span>{response.description}</span></button>)}</fieldset>:null}</div><div className="event-pulse">今月</div></div>
  <div className="action-head"><div><span className="section-label">DECISIONS</span><h2>経営判断</h2></div><div className="ap"><span>ACTION POINT</span><strong>{game.actionPoints}</strong><i>/ 3</i></div></div>
  <nav className="tabs" aria-label="アクション分類">{grouped.map(([id,label])=><button className={tab===id?"active":""} onClick={()=>setTab(id)} key={id}>{label}</button>)}</nav>
- <div className="actions">{ACTIONS.filter(a=>a.category===tab).map(a=><button key={a.id} className={`action-card ${selected.has(a.id)?"selected":""}`} onClick={()=>setGame(toggleAction(game,a.id))} aria-pressed={selected.has(a.id)} disabled={!selected.has(a.id)&&a.ap>game.actionPoints}><div className="action-title"><span className="checkbox">{selected.has(a.id)?"✓":""}</span><strong>{a.name}</strong><b>{a.ap} AP</b></div><p>{a.description}</p><div className="action-meta"><span>費用 {money(a.cashCost||a.effect.capex||0)}</span><span>リスク {a.risk}</span><span>{a.duration}か月</span></div></button>)}</div>
+ <div className="actions">{ACTIONS.filter(a=>a.category===tab).map(a=>{const guide=ACTION_GUIDES[a.id];return <button key={a.id} className={`action-card ${selected.has(a.id)?"selected":""}`} onClick={()=>setGame(toggleAction(game,a.id))} aria-pressed={selected.has(a.id)} disabled={!selected.has(a.id)&&a.ap>game.actionPoints}><div className="action-title"><span className="checkbox">{selected.has(a.id)?"✓":""}</span><strong>{a.name}</strong><b>{a.ap} AP</b></div><p className="easy-summary">{guide.simple}</p><div className="effect-story"><span><b>いま</b>{guide.now}</span><span><b>あとで</b>{guide.later}</span><span><b>注意</b>{guide.watch}</span></div><div className="action-meta"><span>先に出る現金 {money(a.cashCost||a.effect.capex||0)}</span><span>リスク {a.risk}</span><span>効果 {a.duration}か月</span></div></button>})}</div>
  <div className="commit-bar"><div><strong>{game.selectedActionIds.length}件を選択</strong><span>{needsResponse&&!game.selectedEventResponseId?"イベント対応を選択してください":`残りAP ${game.actionPoints}`}</span></div><button className="commit" disabled={!canProcess} onClick={()=>setGame(processMonth(game))}>今月を実行 <span>→</span></button></div></section>
  <button className="mobile-finance-toggle" type="button" aria-expanded={financeOpen} onClick={()=>setFinanceOpen(open=>!open)}>{financeOpen?"財務詳細を閉じる":"財務詳細を表示"}</button><aside className={`finance-column ${financeOpen?"mobile-open":""}`}><div className="liquidity-card"><span className="section-label">RUNWAY</span><h3>現金安全余裕</h3><strong>{(f.balance.cash/Math.max(1,f.monthlyFixedCosts)).toFixed(1)}<small>か月</small></strong><div className="meter"><i style={{width:`${Math.min(100,f.balance.cash/Math.max(1,f.monthlyFixedCosts)*20)}%`}}/></div><p>固定費を賄える月数。3か月以上がひとつの目安です。</p></div>
  <div className="statement-card"><nav>{(["pl","bs","cf","trend"] as const).map(x=><button key={x} className={statement===x?"active":""} onClick={()=>setStatement(x)}>{x==="pl"?"損益":x==="bs"?"貸借":x==="cf"?"CF":"推移"}</button>)}</nav><Statement type={statement} game={game}/></div>
@@ -80,8 +82,15 @@ function Final({game,onHome,onRestart}:{game:GameState;onHome:()=>void;onRestart
  <section className="score-grid">{[["総合スコア",`${s.score}点`],["最終現金",money(game.financial.balance.cash)],["累計売上",money(game.cumulativeRevenue)],["累計純利益",money(game.cumulativeProfit)],["累計営業CF",money(game.cumulativeOperatingCF)],["累計フリーCF",money(game.cumulativeFreeCF)],["借入残高",money(game.financial.balance.longDebt+game.financial.balance.shortDebt)],["自己資本比率",`${(s.equityRatio*100).toFixed(1)}%`],["現金月商倍率",`${s.cashToSales.toFixed(2)}倍`],["事業成長率",`${(s.growth*100).toFixed(1)}%`],["CF安定性",`${s.stability.toFixed(0)} / 100`],["倒産リスク",s.risk]].map(([l,v])=><div key={l}><span>{l}</span><strong>{v}</strong></div>)}</section>
  <div className="final-actions"><button className="primary" onClick={onRestart}>同じ条件で再挑戦</button><button className="ghost" onClick={onHome}>タイトルへ</button></div><p>ベストスコア {Math.max(getBest(),s.score)}点</p></main>
 }
-function Modal({type,close}:{type:"guide"|"glossary";close:()=>void}){
+function Modal({type,close}:{type:LearningModal;close:()=>void}){
+ const [step,setStep]=useState(0);
+ const [view,setView]=useState<LearningModal>(type);
  useEffect(()=>{const fn=(e:KeyboardEvent)=>{if(e.key==="Escape")close()};addEventListener("keydown",fn);return()=>removeEventListener("keydown",fn)},[close]);
- return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.currentTarget===e.target)close()}}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button className="modal-close" autoFocus onClick={close} aria-label="閉じる">×</button><span className="section-label">REFERENCE</span><h2 id="modal-title">{type==="guide"?"遊び方":"キャッシュフロー用語集"}</h2>{type==="guide"?<ol><li>毎月3AP以内で複数の経営判断を選びます。</li><li>売上・費用・運転資金・投資・調達が財務三表を動かします。</li><li>現金が尽きる前に、成長と安全余裕を両立してください。</li><li>期間終了時に成長性・安全性・効率・CF安定性を総合評価します。</li></ol>:<dl className="glossary">{GLOSSARY.map(([t,d])=><div key={t}><dt>{t}</dt><dd>{d}</dd></div>)}</dl>}</section></div>
+ const titles={guide:"はじめてチュートリアル",rules:"やさしいルールブック",actions:"アクション図鑑",glossary:"ことば図鑑"};
+ return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.currentTarget===e.target)close()}}><section className="modal learning-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button className="modal-close" autoFocus onClick={close} aria-label="閉じる">×</button><span className="section-label">LEARNING CENTER</span><h2 id="modal-title">{titles[view]}</h2><nav className="learn-tabs" aria-label="学習メニュー">{([["guide","はじめて"],["rules","ルール"],["actions","アクション"],["glossary","ことば"]] as const).map(([id,label])=><button key={id} className={view===id?"active":""} onClick={()=>{setView(id);setStep(0)}}>{label}</button>)}</nav>
+ {view==="guide"&&<div className="tutorial"><div className="tutorial-progress" aria-label={`${step+1}/${TUTORIAL_STEPS.length}`}>{TUTORIAL_STEPS.map((_,i)=><i key={i} className={i<=step?"done":""}/>)}</div><div className="tutorial-icon" aria-hidden="true">{TUTORIAL_STEPS[step].icon}</div><small>その {step+1} / {TUTORIAL_STEPS.length}</small><h3>{TUTORIAL_STEPS[step].title}</h3><p>{TUTORIAL_STEPS[step].body}</p><aside>たとえば：{TUTORIAL_STEPS[step].example}</aside><div className="tutorial-actions"><button disabled={step===0} onClick={()=>setStep(s=>s-1)}>← もどる</button>{step<TUTORIAL_STEPS.length-1?<button className="primary" onClick={()=>setStep(s=>s+1)}>つぎへ →</button>:<button className="primary" onClick={close}>わかった！ゲームへ</button>}</div></div>}
+ {view==="rules"&&<div className="rulebook">{RULE_SECTIONS.map((section,i)=><article key={section.title}><span>{i+1}</span><div><h3>{section.title}</h3><p>{section.body}</p></div></article>)}</div>}
+ {view==="actions"&&<div className="action-encyclopedia">{ACTIONS.map(action=>{const guide=ACTION_GUIDES[action.id];return <details key={action.id}><summary><strong>{action.name}</strong><span>{categories[action.category]}・{action.ap}AP</span></summary><p>{guide.simple}</p><dl><div><dt>いま</dt><dd>{guide.now}</dd></div><div><dt>あとで</dt><dd>{guide.later}</dd></div><div><dt>注意</dt><dd>{guide.watch}</dd></div></dl></details>})}</div>}
+ {view==="glossary"&&<dl className="glossary">{GLOSSARY.map(([t,d])=><div key={t}><dt>{t}</dt><dd>{d}</dd></div>)}</dl>}</section></div>
 }
 export default App;

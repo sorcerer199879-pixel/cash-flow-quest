@@ -78,6 +78,159 @@
   font-weight: 700;
 }
 
+.easy-summary {
+  min-height: auto !important;
+  color: #13231d !important;
+  font-size: 13px !important;
+  font-weight: 700;
+}
+
+.effect-story {
+  display: grid;
+  gap: 5px;
+  margin: 12px 0;
+}
+
+.effect-story span {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 7px;
+  color: #56635b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.effect-story b {
+  color: #13231d;
+  font-size: 10px;
+}
+
+.effect-story span:nth-child(1) b { color: #c84a25; }
+.effect-story span:nth-child(2) b { color: #297443; }
+.effect-story span:nth-child(3) b { color: #845e16; }
+
+.learning-modal {
+  max-width: 760px;
+  border-radius: 16px;
+}
+
+.learn-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 18px 0 24px;
+  border: 1px solid #ccd2c6;
+}
+
+.learn-tabs button {
+  border: 0;
+  border-right: 1px solid #ccd2c6;
+  background: #fff;
+  padding: 12px 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.learn-tabs button:last-child { border-right: 0; }
+.learn-tabs button.active { background: #c6ff52; }
+
+.tutorial {
+  text-align: center;
+  max-width: 580px;
+  margin: auto;
+}
+
+.tutorial-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+
+.tutorial-progress i {
+  height: 6px;
+  flex: 1;
+  border-radius: 99px;
+  background: #dfe4dc;
+}
+
+.tutorial-progress i.done { background: #ff6b37; }
+.tutorial-icon { font-size: 62px; line-height: 1; }
+.tutorial > small { display: block; margin-top: 12px; color: #68736c; }
+.tutorial h3 { margin: 7px 0 12px; font-size: 27px; }
+.tutorial > p { font-size: 16px; line-height: 1.9; text-align: left; }
+
+.tutorial aside {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #efffd1;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.tutorial-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.tutorial-actions button {
+  border: 1px solid #13231d;
+  background: transparent;
+  padding: 12px 18px;
+  font-weight: 800;
+}
+
+.tutorial-actions button.primary { background: #13231d; }
+.tutorial-actions button:disabled { opacity: .35; }
+
+.rulebook {
+  display: grid;
+  gap: 10px;
+}
+
+.rulebook article {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid #ccd2c6;
+  background: #fff;
+}
+
+.rulebook article > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #c6ff52;
+  font-weight: 900;
+}
+
+.rulebook h3 { margin: 0 0 5px; font-size: 16px; }
+.rulebook p { margin: 0; color: #56635b; font-size: 13px; line-height: 1.75; }
+
+.action-encyclopedia details {
+  border-top: 1px solid #ccd2c6;
+  background: #fff;
+}
+
+.action-encyclopedia summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 12px;
+  cursor: pointer;
+}
+
+.action-encyclopedia summary span { color: #68736c; font-size: 11px; }
+.action-encyclopedia > details > p { margin: 0 12px 12px; font-size: 13px; }
+.action-encyclopedia dl { margin: 0 12px 16px; }
+.action-encyclopedia dl div { display: grid; grid-template-columns: 55px 1fr; padding: 7px 0; border-top: 1px dashed #ccd2c6; }
+.action-encyclopedia dt { font-size: 11px; font-weight: 900; }
+.action-encyclopedia dd { margin: 0; color: #56635b; font-size: 12px; }
+
 @media (max-width: 600px) {
   .mobile-finance-toggle {
     display: block;
@@ -94,4 +247,11 @@
   .finance-column.mobile-open .tip {
     display: block;
   }
+
+  .learning-modal { padding: 25px 18px; max-height: 92vh; }
+  .learning-modal h2 { font-size: 22px; }
+  .learn-tabs button { font-size: 10px; }
+  .tutorial h3 { font-size: 22px; }
+  .tutorial > p { font-size: 15px; }
+  .effect-story span { grid-template-columns: 44px 1fr; }
 }
