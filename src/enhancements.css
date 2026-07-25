@@ -231,6 +231,184 @@
 .action-encyclopedia dt { font-size: 11px; font-weight: 900; }
 .action-encyclopedia dd { margin: 0; color: #56635b; font-size: 12px; }
 
+.tabs button:last-child {
+  margin-left: auto;
+  color: #13231d;
+  font-weight: 800;
+}
+
+.tabs button:last-child::before {
+  content: "◎";
+  margin-right: 6px;
+  color: #ff6b37;
+}
+
+.status-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.status-panel > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  background: #13231d;
+  color: #fff;
+}
+
+.status-panel h3 {
+  margin: 5px 0;
+  font-size: 24px;
+}
+
+.status-panel header p {
+  margin: 0;
+  color: #b7c1b9;
+  font-size: 12px;
+}
+
+.status-badge {
+  flex: 0 0 100px;
+  padding: 13px;
+  border: 1px solid #ffffff33;
+  text-align: center;
+}
+
+.status-badge span { display: block; font-size: 9px; color: #c6cec8; }
+.status-badge strong { display: block; margin-top: 4px; font-size: 21px; }
+.status-badge.good strong { color: #c6ff52; }
+.status-badge.watch strong { color: #ffd15c; }
+.status-badge.danger strong { color: #ff8660; }
+
+.status-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid #ccd2c6;
+  border-left: 1px solid #ccd2c6;
+}
+
+.status-summary article {
+  padding: 17px;
+  border-right: 1px solid #ccd2c6;
+  border-bottom: 1px solid #ccd2c6;
+  background: #fff;
+}
+
+.status-summary span,
+.status-summary small {
+  display: block;
+  color: #68736c;
+  font-size: 10px;
+}
+
+.status-summary strong {
+  display: block;
+  margin: 6px 0;
+  font-size: 20px;
+}
+
+.status-columns {
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  gap: 14px;
+}
+
+.cost-map,
+.health-grid {
+  padding: 20px;
+  border: 1px solid #ccd2c6;
+  background: #fff;
+}
+
+.cost-map h4,
+.health-grid h4 {
+  margin: 0 0 16px;
+  font-size: 15px;
+}
+
+.cost-map > div {
+  display: grid;
+  grid-template-columns: 105px 1fr 72px;
+  align-items: center;
+  gap: 9px;
+  margin: 11px 0;
+  font-size: 11px;
+}
+
+.cost-map b { text-align: right; }
+.status-meter { height: 7px; background: #e7ebe4; }
+.status-meter i { display: block; height: 100%; background: #ff6b37; }
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.health-grid h4 { grid-column: 1 / -1; }
+
+.health-grid > div {
+  padding: 13px;
+  border: 1px solid #dde2da;
+  background: #f7f8f3;
+}
+
+.health-grid span,
+.health-grid small {
+  display: block;
+  color: #68736c;
+  font-size: 10px;
+}
+
+.health-grid strong {
+  display: block;
+  margin: 5px 0;
+  font-size: 18px;
+}
+
+.health-grid p {
+  margin: 8px 0 0;
+  color: #56635b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.health-grid .good { color: #247441; }
+.health-grid .watch { color: #936412; }
+.health-grid .danger { color: #c34224; }
+
+.status-details {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid #ccd2c6;
+  background: #fff;
+}
+
+.status-details > div {
+  padding: 13px;
+  border-right: 1px solid #ccd2c6;
+}
+
+.status-details > div:last-child { border-right: 0; }
+.status-details span { display: block; color: #68736c; font-size: 10px; }
+.status-details strong { display: block; margin-top: 4px; font-size: 15px; }
+
+.selection-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding: 16px 18px;
+  border-left: 5px solid #c6ff52;
+  background: #13231d;
+  color: #fff;
+}
+
+.selection-preview span { display: block; color: #aeb9b1; font-size: 10px; }
+.selection-preview strong { display: block; margin-top: 5px; font-size: 12px; }
+.selection-preview p { margin: 0; color: #c5cec8; font-size: 11px; line-height: 1.6; }
+
 @media (max-width: 600px) {
   .mobile-finance-toggle {
     display: block;
@@ -254,4 +432,14 @@
   .tutorial h3 { font-size: 22px; }
   .tutorial > p { font-size: 15px; }
   .effect-story span { grid-template-columns: 44px 1fr; }
+  .tabs button:last-child { margin-left: 0; }
+  .status-panel > header { align-items: flex-start; padding: 18px; }
+  .status-panel h3 { font-size: 20px; }
+  .status-summary { grid-template-columns: repeat(2, 1fr); }
+  .status-columns { grid-template-columns: 1fr; }
+  .health-grid { grid-template-columns: 1fr 1fr; }
+  .status-details { grid-template-columns: repeat(2, 1fr); }
+  .status-details > div { border-bottom: 1px solid #ccd2c6; }
+  .selection-preview { grid-template-columns: 1fr; }
+  .cost-map > div { grid-template-columns: 92px 1fr 65px; }
 }
