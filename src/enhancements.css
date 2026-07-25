@@ -409,6 +409,52 @@
 .selection-preview strong { display: block; margin-top: 5px; font-size: 12px; }
 .selection-preview p { margin: 0; color: #c5cec8; font-size: 11px; line-height: 1.6; }
 
+.coach-summary {
+  max-width: 680px;
+  margin: 10px auto 28px;
+  color: #68736c;
+  line-height: 1.7;
+}
+
+.coach-report {
+  max-width: 950px;
+  margin: 35px auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  text-align: left;
+}
+
+.coach-heading {
+  grid-column: 1 / -1;
+  padding: 24px;
+  background: #13231d;
+  color: #fff;
+}
+
+.coach-heading h2 { margin: 6px 0; }
+.coach-heading p { margin: 0; color: #b7c1b9; font-size: 12px; }
+
+.coach-block {
+  padding: 22px;
+  border: 1px solid #ccd2c6;
+  background: #fff;
+}
+
+.coach-block > span {
+  color: #68736c;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.coach-block h3 { margin: 6px 0 14px; font-size: 18px; }
+.coach-block ul { margin: 0; padding-left: 20px; }
+.coach-block li { margin: 9px 0; color: #56635b; font-size: 12px; line-height: 1.7; }
+.coach-block.good { border-top: 5px solid #72a92f; }
+.coach-block.review { border-top: 5px solid #ff6b37; }
+.coach-block.strategy { border-top: 5px solid #13231d; background: #efffd1; }
+
 @media (max-width: 600px) {
   .mobile-finance-toggle {
     display: block;
@@ -442,4 +488,6 @@
   .status-details > div { border-bottom: 1px solid #ccd2c6; }
   .selection-preview { grid-template-columns: 1fr; }
   .cost-map > div { grid-template-columns: 92px 1fr 65px; }
+  .coach-report { grid-template-columns: 1fr; }
+  .coach-heading { grid-column: 1; }
 }
