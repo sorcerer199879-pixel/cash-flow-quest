@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ACTIONS, DIFFICULTIES, GLOSSARY, MAN } from "./config";
 import { ACTION_GUIDES, RULE_SECTIONS, TUTORIAL_STEPS } from "./education";
 import { createGame, nextMonth, prepareMonth, processMonth, scoreGame, selectEventResponse, toggleAction } from "./engine/game";
+import { calculateBusinessStatus } from "./engine/status";
 import { deleteSave, getBest, hasSave, loadGame, saveBest, saveGame } from "./storage";
 import type { Difficulty, GameState } from "./types";
 
@@ -37,7 +38,7 @@ function Title({onStart,seed,setSeed,onContinue,modal,setModal}:{onStart:(d:Diff
 
 function Game({game,setGame,onHome,onGlossary,modal,setModal}:{game:GameState;setGame:(s:GameState)=>void;onHome:()=>void;onGlossary:()=>void;modal:LearningModal|null;setModal:(m:LearningModal|null)=>void}){
  const f=game.financial, selected=new Set(game.selectedActionIds);
- const grouped=Object.entries(categories);
+ const grouped=[...Object.entries(categories),["status","ステータス"]];
  const [tab,setTab]=useState("sales");
  const [statement,setStatement]=useState<"pl"|"bs"|"cf"|"trend">("pl");
  const [financeOpen,setFinanceOpen]=useState(false);
@@ -50,12 +51,42 @@ function Game({game,setGame,onHome,onGlossary,modal,setModal}:{game:GameState;se
  <div className="dashboard"><section className="decision-column"><div className="event-card"><div><span className="section-label">MARKET / EVENT</span><h2>{game.currentEvent?.title??"穏やかな市場"}</h2><p>{game.currentEvent?.description??"今月は大きな外部変化はありません。足元の経営に集中できます。"}</p>{game.currentEvent?.responses?.length?<fieldset className="event-responses"><legend>対応策を選択</legend>{game.currentEvent.responses.map(response=><button type="button" key={response.id} className={game.selectedEventResponseId===response.id?"selected":""} aria-pressed={game.selectedEventResponseId===response.id} onClick={()=>setGame(selectEventResponse(game,response.id))}><strong>{response.label}</strong><span>{response.description}</span></button>)}</fieldset>:null}</div><div className="event-pulse">今月</div></div>
  <div className="action-head"><div><span className="section-label">DECISIONS</span><h2>経営判断</h2></div><div className="ap"><span>ACTION POINT</span><strong>{game.actionPoints}</strong><i>/ 3</i></div></div>
  <nav className="tabs" aria-label="アクション分類">{grouped.map(([id,label])=><button className={tab===id?"active":""} onClick={()=>setTab(id)} key={id}>{label}</button>)}</nav>
- <div className="actions">{ACTIONS.filter(a=>a.category===tab).map(a=>{const guide=ACTION_GUIDES[a.id];return <button key={a.id} className={`action-card ${selected.has(a.id)?"selected":""}`} onClick={()=>setGame(toggleAction(game,a.id))} aria-pressed={selected.has(a.id)} disabled={!selected.has(a.id)&&a.ap>game.actionPoints}><div className="action-title"><span className="checkbox">{selected.has(a.id)?"✓":""}</span><strong>{a.name}</strong><b>{a.ap} AP</b></div><p className="easy-summary">{guide.simple}</p><div className="effect-story"><span><b>いま</b>{guide.now}</span><span><b>あとで</b>{guide.later}</span><span><b>注意</b>{guide.watch}</span></div><div className="action-meta"><span>先に出る現金 {money(a.cashCost||a.effect.capex||0)}</span><span>リスク {a.risk}</span><span>効果 {a.duration}か月</span></div></button>})}</div>
+ {tab==="status"?<StatusPanel game={game}/>:<div className="actions">{ACTIONS.filter(a=>a.category===tab).map(a=>{const guide=ACTION_GUIDES[a.id];return <button key={a.id} className={`action-card ${selected.has(a.id)?"selected":""}`} onClick={()=>setGame(toggleAction(game,a.id))} aria-pressed={selected.has(a.id)} disabled={!selected.has(a.id)&&a.ap>game.actionPoints}><div className="action-title"><span className="checkbox">{selected.has(a.id)?"✓":""}</span><strong>{a.name}</strong><b>{a.ap} AP</b></div><p className="easy-summary">{guide.simple}</p><div className="effect-story"><span><b>いま</b>{guide.now}</span><span><b>あとで</b>{guide.later}</span><span><b>注意</b>{guide.watch}</span></div><div className="action-meta"><span>先に出る現金 {money(a.cashCost||a.effect.capex||0)}</span><span>リスク {a.risk}</span><span>効果 {a.duration}か月</span></div></button>})}</div>}
  <div className="commit-bar"><div><strong>{game.selectedActionIds.length}件を選択</strong><span>{needsResponse&&!game.selectedEventResponseId?"イベント対応を選択してください":`残りAP ${game.actionPoints}`}</span></div><button className="commit" disabled={!canProcess} onClick={()=>setGame(processMonth(game))}>今月を実行 <span>→</span></button></div></section>
  <button className="mobile-finance-toggle" type="button" aria-expanded={financeOpen} onClick={()=>setFinanceOpen(open=>!open)}>{financeOpen?"財務詳細を閉じる":"財務詳細を表示"}</button><aside className={`finance-column ${financeOpen?"mobile-open":""}`}><div className="liquidity-card"><span className="section-label">RUNWAY</span><h3>現金安全余裕</h3><strong>{(f.balance.cash/Math.max(1,f.monthlyFixedCosts)).toFixed(1)}<small>か月</small></strong><div className="meter"><i style={{width:`${Math.min(100,f.balance.cash/Math.max(1,f.monthlyFixedCosts)*20)}%`}}/></div><p>固定費を賄える月数。3か月以上がひとつの目安です。</p></div>
  <div className="statement-card"><nav>{(["pl","bs","cf","trend"] as const).map(x=><button key={x} className={statement===x?"active":""} onClick={()=>setStatement(x)}>{x==="pl"?"損益":x==="bs"?"貸借":x==="cf"?"CF":"推移"}</button>)}</nav><Statement type={statement} game={game}/></div>
  <div className="tip"><span>今月の視点</span><p>売上の増加は、売掛金と在庫も増やします。成長に必要な現金を先回りして確保できていますか？</p></div></aside></div>
  {modal&&<Modal type={modal} close={()=>setModal(null)}/>}</main>
+}
+
+function StatusPanel({game}:{game:GameState}){
+ const f=game.financial,s=calculateBusinessStatus(f);
+ const chosen=ACTIONS.filter(action=>game.selectedActionIds.includes(action.id));
+ const selectedCash=chosen.reduce((total,action)=>total+action.cashCost+(action.effect.capex??0)-(action.effect.borrowing??0)-(action.effect.equityRaised??0)+(action.effect.repayment??0),0);
+ const revenueGap=s.expectedRevenue-s.breakEvenRevenue;
+ const runwayTone=s.cashRunwayMonths>=3?"good":s.cashRunwayMonths>=1.5?"watch":"danger";
+ const growthTone=s.monthlyGrowthRate>=.01?"good":s.monthlyGrowthRate>=0?"watch":"danger";
+ return <section className="status-panel" aria-labelledby="status-title">
+  <header><div><span className="section-label">BUSINESS STATUS</span><h3 id="status-title">今月の会社の体力</h3><p>まだアクションを実行しない場合の、現在の設定から計算した目安です。</p></div><div className={`status-badge ${runwayTone}`}><span>現金の安心度</span><strong>{runwayTone==="good"?"安心":runwayTone==="watch"?"注意":"危険"}</strong></div></header>
+  <div className="status-summary">
+   <article><span>今月の予想売上</span><strong>{money(s.expectedRevenue)}</strong><small>今の成長率で進んだ場合</small></article>
+   <article><span>製品を作る費用</span><strong>{money(s.productionCost)}</strong><small>売上の {(f.variableCostRate*100).toFixed(1)}%</small></article>
+   <article><span>毎月ほぼ決まる費用</span><strong>{money(f.monthlyFixedCosts)}</strong><small>売上がゼロでもかかる費用</small></article>
+   <article><span>すべての月間コスト</span><strong>{money(s.totalMonthlyCost)}</strong><small>生産費・固定費・利息など</small></article>
+  </div>
+  <div className="status-columns">
+   <section className="cost-map"><h4>お金は何に使われる？</h4>{[
+    ["製品の生産",s.productionCost,s.totalMonthlyCost],
+    ["人件費",s.payroll,s.totalMonthlyCost],
+    ["家賃",s.rent,s.totalMonthlyCost],
+    ["その他固定費",s.otherFixed,s.totalMonthlyCost],
+    ["減価償却・利息",s.depreciation+s.interest,s.totalMonthlyCost]
+   ].map(([label,value,total])=><div key={String(label)}><span>{label}</span><div className="status-meter"><i style={{width:`${Math.max(2,Number(value)/Math.max(1,Number(total))*100)}%`}}/></div><b>{money(Number(value))}</b></div>)}</section>
+   <section className="health-grid"><h4>経営のものさし</h4><div><span>損益分岐点</span><strong>{money(s.breakEvenRevenue)}</strong><small className={revenueGap>=0?"up":"down"}>予想売上は {signed(revenueGap)}</small><p>これより多く売ると利益が出やすくなります。</p></div><div><span>成長性</span><strong className={growthTone}>{(s.monthlyGrowthRate*100).toFixed(1)}% / 月</strong><small>年率換算 約{(s.annualizedGrowthRate*100).toFixed(1)}%</small><p>毎月の基礎売上が伸びる力です。</p></div><div><span>現金安全余裕</span><strong className={runwayTone}>{s.cashRunwayMonths.toFixed(1)}か月</strong><small>目安は3か月以上</small><p>売上がなくても固定費を払える期間です。</p></div><div><span>運転資金</span><strong>{money(s.workingCapital)}</strong><small>売掛金＋在庫−買掛金</small><p>商売を回すために、今は使えないお金です。</p></div></section>
+  </div>
+  <div className="status-details"><div><span>売掛金の回収</span><strong>{f.receivableMonths}か月</strong></div><div><span>仕入代金の支払い</span><strong>{f.payableMonths}か月</strong></div><div><span>借入金利</span><strong>{(f.interestRate*100).toFixed(1)}%</strong></div><div><span>自己資本比率</span><strong>{(s.equityRatio*100).toFixed(1)}%</strong></div></div>
+  <aside className="selection-preview"><div><span>選択中のアクション</span><strong>{chosen.length?chosen.map(a=>a.name).join("・"):"まだ選んでいません"}</strong></div><p>{chosen.length?`実行時に先に出る現金の概算は ${money(Math.max(0,selectedCash))} です。借入・増資は差し引いて表示しています。`:"各アクションを選んだあと、ここへ戻ると必要な現金の概算を確認できます。"}</p></aside>
+ </section>
 }
 
 function Statement({type,game}:{type:"pl"|"bs"|"cf"|"trend";game:GameState}){
