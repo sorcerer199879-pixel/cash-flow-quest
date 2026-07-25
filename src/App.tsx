@@ -3,6 +3,7 @@ import { ACTIONS, DIFFICULTIES, GLOSSARY, MAN } from "./config";
 import { ACTION_GUIDES, RULE_SECTIONS, TUTORIAL_STEPS } from "./education";
 import { createGame, nextMonth, prepareMonth, processMonth, scoreGame, selectEventResponse, toggleAction } from "./engine/game";
 import { calculateBusinessStatus } from "./engine/status";
+import { analyzePlay } from "./engine/coach";
 import { deleteSave, getBest, hasSave, loadGame, saveBest, saveGame } from "./storage";
 import type { Difficulty, GameState } from "./types";
 
@@ -109,9 +110,13 @@ function MonthResult({game,onNext}:{game:GameState;onNext:()=>void}){
  <section className="chosen"><span>選択した判断</span><strong>{r.selectedActions.join(" ／ ")||"アクションを温存"}{r.eventResponse?` ／ イベント対応: ${r.eventResponse.label}`:""}</strong></section><button className="next-button" onClick={onNext}>次の月へ進む <span>→</span></button></main>
 }
 function Final({game,onHome,onRestart}:{game:GameState;onHome:()=>void;onRestart:()=>void}){
- const s=scoreGame(game);useEffect(()=>saveBest(s.score),[s.score]);return <main className="final-shell"><p className="eyebrow">{game.gameOverReason?"BUSINESS CLOSED":"QUEST COMPLETE"}</p><div className="rank">{s.rank}</div><h1>{game.gameOverReason?"資金繰りの旅はここで終了":"安定した事業への一歩"}</h1>{game.gameOverReason&&<p className="gameover">{game.gameOverReason}</p>}<p className="type">経営タイプ — <strong>{s.type}</strong></p>
+ const s=scoreGame(game),coach=analyzePlay(game);useEffect(()=>saveBest(s.score),[s.score]);return <main className="final-shell"><p className="eyebrow">{game.gameOverReason?"BUSINESS CLOSED":"QUEST COMPLETE"}</p><div className="rank">{s.rank}</div><h1>{game.gameOverReason?"資金繰りの旅はここで終了":"安定した事業への一歩"}</h1>{game.gameOverReason&&<p className="gameover">{game.gameOverReason}</p>}<p className="type">経営タイプ — <strong>{coach.styleName}</strong></p><p className="coach-summary">{coach.styleSummary}</p>
  <section className="score-grid">{[["総合スコア",`${s.score}点`],["最終現金",money(game.financial.balance.cash)],["累計売上",money(game.cumulativeRevenue)],["累計純利益",money(game.cumulativeProfit)],["累計営業CF",money(game.cumulativeOperatingCF)],["累計フリーCF",money(game.cumulativeFreeCF)],["借入残高",money(game.financial.balance.longDebt+game.financial.balance.shortDebt)],["自己資本比率",`${(s.equityRatio*100).toFixed(1)}%`],["現金月商倍率",`${s.cashToSales.toFixed(2)}倍`],["事業成長率",`${(s.growth*100).toFixed(1)}%`],["CF安定性",`${s.stability.toFixed(0)} / 100`],["倒産リスク",s.risk]].map(([l,v])=><div key={l}><span>{l}</span><strong>{v}</strong></div>)}</section>
+ <section className="coach-report" aria-labelledby="coach-title"><div className="coach-heading"><span className="section-label">MANAGEMENT COACH</span><h2 id="coach-title">今回の経営を振り返る</h2><p>結果だけでなく、毎月の選び方とお金の動きから分析しています。</p></div><CoachBlock label="PLAY STYLE" title="プレイ傾向" items={coach.tendencies}/><CoachBlock label="GOOD" title="良かった判断" items={coach.goodChoices} tone="good"/><CoachBlock label="REVIEW" title="良くなかった行動" items={coach.weakChoices} tone="review"/><CoachBlock label="NEXT QUEST" title="次回おすすめの戦略" items={coach.nextStrategies} tone="strategy"/></section>
  <div className="final-actions"><button className="primary" onClick={onRestart}>同じ条件で再挑戦</button><button className="ghost" onClick={onHome}>タイトルへ</button></div><p>ベストスコア {Math.max(getBest(),s.score)}点</p></main>
+}
+function CoachBlock({label,title,items,tone=""}:{label:string;title:string;items:string[];tone?:""|"good"|"review"|"strategy"}){
+ return <article className={`coach-block ${tone}`}><span>{label}</span><h3>{title}</h3><ul>{items.map(item=><li key={item}>{item}</li>)}</ul></article>
 }
 function Modal({type,close}:{type:LearningModal;close:()=>void}){
  const [step,setStep]=useState(0);
